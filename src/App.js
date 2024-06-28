@@ -1,11 +1,13 @@
-
 import './App.css';
+import Body from './components/Body';
+import appStore from './store/appStore';
+import {Provider} from 'react-redux';
 
 function App() {
   return (
-    <div className="text-3xl font-bold text-center text-red-800">
-      Netflix Clone
-    </div>
+    <Provider store={appStore}>
+    <Body/>
+    </Provider>
   );
 }
 
