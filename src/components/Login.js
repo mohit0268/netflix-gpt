@@ -1,10 +1,14 @@
 import React, { useState, useRef } from "react";
+import {createUserWithEmailAndPassword,signInWithEmailAndPassword, updateProfile} from "firebase/auth";
+import { auth } from "../utils/firebase";
 import Header from "./Header";
 import checkValidateData from "../utils/validate";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
   const [isSignIn, setIsSignIn] = useState(true);
-  const [errorMessage,setErrorMessage]=useState(null);
+  const [errorMessage, setErrorMessage] = useState(null);
+  const navigate = useNavigate();
 
   const name = useRef(null);
   const email = useRef(null);
@@ -14,11 +18,61 @@ const Login = () => {
     return setIsSignIn(!isSignIn);
   };
 
+  
   const handleClickHandler = () => {
     //validate the form
-    const message = checkValidateData(email.current.value,password.current.value,name.current.value);
+    const message = checkValidateData(
+      email.current.value,
+      password.current.value,
+      
+    );
     setErrorMessage(message);
-  }
+
+    if (message) return;
+
+    if (!isSignIn) {
+      // Sign up logic
+      createUserWithEmailAndPassword(
+        auth,
+        email.current.value,
+        password.current.value
+      )
+        .then((userCredential) => {
+          // Signed up
+          const user = userCredential.user;
+          updateProfile(user, {
+            displayName: name.current.value
+          }).then(() => {
+            navigate('/browse')
+          }).catch((error) => {
+            setErrorMessage(error.message)
+          });
+          console.log(user);
+          
+        })
+        .catch((error) => {
+          const errorCode = error.code;
+          const errorMessage = error.message;
+          setErrorMessage(errorCode + "-" + errorMessage);
+          // ..
+        });
+    } else {
+      // sign in logic
+      signInWithEmailAndPassword(auth, email.current.value, password.current.value)
+        .then((userCredential) => {
+          // Signed in
+          const user = userCredential.user;
+          console.log(user);
+          navigate('/browse')
+          // ...
+        })
+        .catch((error) => {
+          const errorCode = error.code;
+          const errorMessage = error.message;
+          setErrorMessage(errorCode + "-"+ errorMessage)
+        });
+    }
+  };
 
   return (
     <div className="">
@@ -31,14 +85,15 @@ const Login = () => {
         />
       </div>
 
-      
-
-      <form onSubmit={(e) => e.preventDefault() } className="w-12/12 lg:w-3/12 md:w-6/12 sm:w-8/12 my-48 absolute p-2 bg-black flex flex-col m-auto right-0 left-0 shadow-2xl bg-opacity-90">
+      <form
+        onSubmit={(e) => e.preventDefault()}
+        className="w-12/12 lg:w-3/12 md:w-6/12 sm:w-8/12 my-48 absolute p-2 bg-black flex flex-col m-auto right-0 left-0 shadow-2xl bg-opacity-90"
+      >
         <h1 className="text-3xl text-white font-bold my-3 mx-10">
           {isSignIn ? "Sign Up" : "Sign In"}
         </h1>
 
-      {/* this field is visible in sign in page */}
+        {/* this field is visible in sign in page */}
         {!isSignIn && (
           <input
             className="p-2 my-3 mx-10 border border-white bg-gray-800 text-white rounded-md"
@@ -49,20 +104,17 @@ const Login = () => {
           />
         )}
 
-
         <input
           className="p-2 my-3 mx-10 border border-white bg-gray-800 text-white rounded-md"
           type="email"
           placeholder="Email and Mobile Number"
           ref={email}
-        
         />
         <input
           type="password"
           placeholder="Password"
           className="p-2 my-3 mx-10 border border-white bg-gray-800 text-white rounded-md"
           ref={password}
-         
         />
         <p className="text-red-800">{errorMessage}</p>
 
